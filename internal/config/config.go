@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -16,10 +17,11 @@ type Config struct {
 
 type PostgresConfig struct {
 	Host     string `env:"POSTGRES_HOST"`
-	Port     string `env:"POSTGRES_PORT"`
+	Port     int    `env:"POSTGRES_PORT"`
 	User     string `env:"POSTGRES_USER"`
 	Password string `env:"POSTGRES_PASS"`
 	Database string `env:"POSTGRES_DB"`
+	DSN      string
 }
 
 type HTTPConfig struct {
@@ -40,6 +42,9 @@ func MustLoad() *Config {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %s", err.Error())
 	}
+
+	cfg.Postgres.DSN = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Database)
 
 	return &cfg
 }
