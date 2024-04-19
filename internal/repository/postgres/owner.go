@@ -30,6 +30,7 @@ func (r *OwnerRepository) InsertOwner(ctx context.Context, owner model.Owner) er
 	if err != nil {
 		return fmt.Errorf("failed to prepare add new owner statement: %w", err)
 	}
+	defer stmt.Close()
 
 	_, err = stmt.ExecContext(ctx, owner.Name, owner.Surname, owner.Patronymic)
 	if err != nil {

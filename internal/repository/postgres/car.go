@@ -29,6 +29,7 @@ func (r *CarRepository) InsertCar(ctx context.Context, car model.Car) error {
 	if err != nil {
 		return fmt.Errorf("failed to prepare add new car statement: %w", err)
 	}
+	defer stmt.Close()
 
 	_, err = stmt.ExecContext(ctx, car.RegistrationNumber, car.Mark, car.Model, car.Year, car.OwnerName, car.OwnerSurname)
 	if err != nil {
