@@ -9,6 +9,7 @@ import (
 
 type carRepository interface {
 	InsertCar(ctx context.Context, car model.Car) error
+	DeleteCar(ctx context.Context, regNumber string) error
 }
 
 type Service struct {
@@ -30,7 +31,7 @@ type AddNewCarInput struct {
 	OwnerSurname       string
 }
 
-func (service *Service) AddNewCar(ctx context.Context, car AddNewCarInput) error {
+func (s *Service) AddNewCar(ctx context.Context, car AddNewCarInput) error {
 
 	carInfo := model.Car{
 		RegistrationNumber: car.RegistrationNumber,
@@ -41,8 +42,17 @@ func (service *Service) AddNewCar(ctx context.Context, car AddNewCarInput) error
 		OwnerSurname:       car.OwnerSurname,
 	}
 
-	if err := service.carRepository.InsertCar(ctx, carInfo); err != nil {
+	if err := s.carRepository.InsertCar(ctx, carInfo); err != nil {
 		return fmt.Errorf("failed to create car: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) DeleteCar(ctx context.Context, regNumber string) error {
+	err := s.carRepository.DeleteCar(ctx, regNumber)
+	if err != nil {
+		return fmt.Errorf("failed to delete car: %w", err)
 	}
 
 	return nil
