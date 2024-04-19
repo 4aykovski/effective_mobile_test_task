@@ -32,10 +32,12 @@ func (hc *HTTPClient) Do(ctx context.Context, r *http.Request) ([]byte, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusUnauthorized {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusUnauthorized && res.StatusCode != http.StatusBadRequest {
 		return nil, fmt.Errorf("can't do request: %w", fmt.Errorf("%w to %s: %d", ErrWrongStatusCode, res.Request.URL.String(), res.StatusCode))
 	} else if res.StatusCode == http.StatusUnauthorized {
 		return nil, fmt.Errorf("can't do request: %w", fmt.Errorf("%w to %s", Err401StatusCode, res.Request.URL.String()))
+	} else if res.StatusCode == http.StatusBadRequest {
+		return nil, fmt.Errorf("can't do request: %w", fmt.Errorf("%w to %s", Err400StatusCode, res.Request.URL.String()))
 	}
 
 	body, err := io.ReadAll(res.Body)
