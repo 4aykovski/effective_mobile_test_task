@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	Postgres PostgresConfig
-	HTTP     HTTPConfig
-	Env      string `env:"ENV"`
+	Postgres    PostgresConfig
+	HTTP        HTTPConfig
+	CarsInfoApi CarsInfoApiConfig
+	Env         string `env:"ENV"`
 }
 
 type PostgresConfig struct {
@@ -25,10 +26,17 @@ type PostgresConfig struct {
 }
 
 type HTTPConfig struct {
-	Host        string        `env:"HTTP_HOST"`
-	Port        string        `env:"HTTP_PORT"`
+	Host        string `env:"HTTP_HOST"`
+	Port        string `env:"HTTP_PORT"`
+	Address     string
 	Timeout     time.Duration `env:"HTTP_TIMEOUT"`
 	IdleTimeout time.Duration `env:"HTTP_IDLE_TIMEOUT"`
+}
+
+type CarsInfoApiConfig struct {
+	Host     string `env:"CARS_INFO_API_HOST"`
+	BasePath string `env:"CARS_INFO_API_BASE_PATH"`
+	Scheme   string `env:"CARS_INFO_API_SCHEME"`
 }
 
 func MustLoad() *Config {
@@ -45,6 +53,8 @@ func MustLoad() *Config {
 
 	cfg.Postgres.DSN = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Database)
+
+	cfg.HTTP.Address = fmt.Sprintf("%s:%s", cfg.HTTP.Host, cfg.HTTP.Port)
 
 	return &cfg
 }
