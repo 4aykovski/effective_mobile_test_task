@@ -122,7 +122,7 @@ func (r *CarRepository) GetCar(ctx context.Context, regNumber string) (model.Car
 }
 
 func (r *CarRepository) GetCars(ctx context.Context, limit, offset int) ([]model.Car, error) {
-	sqlStmt := `SELECT * FROM cars`
+	sqlStmt := `SELECT * FROM cars ORDER BY registration_number`
 	var args []interface{}
 
 	sqlStmt, args = postgres.AddPaginationToStmt(sqlStmt, args, limit, offset)
