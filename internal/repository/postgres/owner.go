@@ -22,7 +22,6 @@ func NewOwnerRepository(postgres *postgres.Postgres) *OwnerRepository {
 }
 
 func (r *OwnerRepository) InsertOwner(ctx context.Context, owner model.Owner) error {
-
 	stmt, err := r.postgres.Prepare(
 		`INSERT INTO owners (name, surname, patronymic)
   			 	VALUES ($1, $2, $3)`,

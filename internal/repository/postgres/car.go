@@ -45,3 +45,27 @@ func (r *CarRepository) InsertCar(ctx context.Context, car model.Car) error {
 
 	return nil
 }
+
+func (r *CarRepository) DeleteCar(ctx context.Context, regNumber string) error {
+	stmt, err := r.postgres.Prepare("DELETE FROM cars WHERE registration_number = $1")
+	if err != nil {
+		return fmt.Errorf("failed to prepare delete car statement: %w", err)
+	}
+	defer stmt.Close()
+
+	res, err := stmt.ExecContext(ctx, regNumber)
+	if err != nil {
+		return fmt.Errorf("failed to execute delete car statement: %w", err)
+	}
+
+	deleted, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if deleted == 0 {
+		return repository.ErrCarNotFound
+	}
+
+	return nil
+}
