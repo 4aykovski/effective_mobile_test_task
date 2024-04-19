@@ -120,3 +120,37 @@ func (r *CarRepository) GetCar(ctx context.Context, regNumber string) (model.Car
 
 	return car, nil
 }
+
+func (r *CarRepository) GetCars(ctx context.Context, limit, offset int) ([]model.Car, error) {
+	sqlStmt := `SELECT * FROM cars`
+	var args []interface{}
+
+	sqlStmt, args = postgres.AddPaginationToStmt(sqlStmt, args, limit, offset)
+
+	stmt, err := r.postgres.Prepare(sqlStmt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare get cars statement: %w", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx, args...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrCarsNotFound
+		}
+
+		return nil, fmt.Errorf("failed to execute get cars statement: %w", err)
+	}
+	defer rows.Close()
+
+	var cars []model.Car
+	for rows.Next() {
+		var car model.Car
+		if err := rows.Scan(&car.RegistrationNumber, &car.Mark, &car.Model, &car.Year, &car.OwnerName, &car.OwnerSurname); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		cars = append(cars, car)
+	}
+
+	return cars, nil
+}
