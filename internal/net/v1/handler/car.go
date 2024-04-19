@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/repository"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/carservice"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/ownerservice"
@@ -25,6 +26,7 @@ type carService interface {
 	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
+	GetCars(ctx context.Context, limit, offset int) ([]model.Car, error)
 }
 
 type ownerService interface {
@@ -206,6 +208,61 @@ func (h *CarHandler) UpdateCar(log *slog.Logger) http.HandlerFunc {
 		log.Info("car updated", slog.String("reg_number", regNumber))
 
 		renderResponse(w, r, response.OK(), http.StatusOK)
+		return
+	}
+}
+
+type GetCarsResponse struct {
+	Cars []model.Car `json:"cars"`
+	response.Response
+}
+
+func (h *CarHandler) GetCars(log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		log = log.With(
+			slog.String("handler", "GetCars"),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		limit, err := getLimitFromUrlQuery(r)
+		if err != nil {
+			log.Info("invalid limit", slog.String("limit", string(rune(limit))))
+
+			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+			return
+		}
+
+		offset, err := getOffsetFromUrlQuery(r)
+		if err != nil {
+			log.Info("invalid offset", slog.String("offset", string(rune(offset))))
+
+			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+			return
+		}
+
+		cars, err := h.carService.GetCars(r.Context(), limit, offset)
+		if err != nil {
+			if errors.Is(err, repository.ErrCarsNotFound) {
+				log.Info("cars not found")
+
+				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				return
+			}
+
+			log.Error("failed to get cars", slog.String("error", err.Error()))
+
+			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Info("cars found", slog.Int("cars_count", len(cars)))
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, GetCarsResponse{
+			Cars:     cars,
+			Response: response.OK(),
+		})
 		return
 	}
 }
