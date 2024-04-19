@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/net/v1/handler"
 	"github.com/4aykovski/effective_mobile_test_task/internal/net/v1/middleware"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/carservice"
@@ -17,6 +18,7 @@ type carService interface {
 	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
+	GetCars(ctx context.Context, limit, offset int) ([]model.Car, error)
 }
 
 type ownerService interface {
@@ -46,6 +48,7 @@ func NewMux(
 			r.Post("/", carHandler.AddNewCar(log))
 			r.Delete("/{reg_number}", carHandler.DeleteCar(log))
 			r.Put("/{reg_number}", carHandler.UpdateCar(log))
+			r.Get("/", carHandler.GetCars(log))
 		})
 	})
 
