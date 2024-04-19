@@ -56,9 +56,9 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 
 		var input AddNewCarInput
 		if err := render.DecodeJSON(r.Body, &input); err != nil {
-			log.Error("Failed to decode request body", slog.String("error", err.Error()))
+			log.Info("request with empty body")
 
-			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
+			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
 			return
 		}
 
