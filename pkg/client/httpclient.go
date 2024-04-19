@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,7 +25,7 @@ func NewHTTPClient(host, basePath, scheme string, client http.Client) *HTTPClien
 	}
 }
 
-func (hc *HTTPClient) Do(r *http.Request) ([]byte, error) {
+func (hc *HTTPClient) Do(ctx context.Context, r *http.Request) ([]byte, error) {
 	res, err := hc.client.Do(r)
 	if err != nil {
 		return nil, fmt.Errorf("can't do request: %w", err)
@@ -46,7 +47,7 @@ func (hc *HTTPClient) Do(r *http.Request) ([]byte, error) {
 }
 
 // CreateRequest return http.Request with given parameters. If you don't need some of the parameters then give nil.
-func (hc *HTTPClient) CreateRequest(httpMethod string, url string, header http.Header, body io.Reader, query url.Values) (*http.Request, error) {
+func (hc *HTTPClient) CreateRequest(ctx context.Context, httpMethod string, url string, header http.Header, body io.Reader, query url.Values) (*http.Request, error) {
 	req, err := http.NewRequest(httpMethod, url, body)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrCantCreateRequest, err)
