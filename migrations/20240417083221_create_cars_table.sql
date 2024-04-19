@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS cars
     year INT,
     owner_name VARCHAR(255) NOT NULL,
     owner_surname VARCHAR(255) NOT NULL,
-    FOREIGN KEY (owner_name, owner_surname) REFERENCES owner(name, surname)
+    FOREIGN KEY (owner_name, owner_surname) REFERENCES owners(name, surname)
 );
 -- +goose StatementEnd
 
