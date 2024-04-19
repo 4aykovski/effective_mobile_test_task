@@ -5,5 +5,6 @@ type Car struct {
 	Mark               string
 	Model              string
 	Year               int
-	OwnerId            int
+	OwnerName          string
+	OwnerSurname       string
 }
