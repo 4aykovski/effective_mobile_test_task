@@ -12,6 +12,7 @@ type carRepository interface {
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car model.Car) error
 	GetCar(ctx context.Context, regNumber string) (model.Car, error)
+	GetCars(ctx context.Context, limit, offset int) ([]model.Car, error)
 }
 
 type Service struct {
@@ -110,4 +111,13 @@ func (s *Service) UpdateCar(ctx context.Context, car UpdateCarInput) error {
 	}
 
 	return nil
+}
+
+func (s *Service) GetCars(ctx context.Context, limit, offset int) ([]model.Car, error) {
+	cars, err := s.carRepository.GetCars(ctx, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cars: %w", err)
+	}
+
+	return cars, nil
 }
