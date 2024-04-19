@@ -10,6 +10,8 @@ import (
 type carRepository interface {
 	InsertCar(ctx context.Context, car model.Car) error
 	DeleteCar(ctx context.Context, regNumber string) error
+	UpdateCar(ctx context.Context, car model.Car) error
+	GetCar(ctx context.Context, regNumber string) (model.Car, error)
 }
 
 type Service struct {
@@ -53,6 +55,58 @@ func (s *Service) DeleteCar(ctx context.Context, regNumber string) error {
 	err := s.carRepository.DeleteCar(ctx, regNumber)
 	if err != nil {
 		return fmt.Errorf("failed to delete car: %w", err)
+	}
+
+	return nil
+}
+
+type UpdateCarInput struct {
+	RegistrationNumber string
+	Mark               string
+	Model              string
+	Year               int
+	OwnerName          string
+	OwnerSurname       string
+}
+
+func (s *Service) UpdateCar(ctx context.Context, car UpdateCarInput) error {
+
+	oldCar, err := s.carRepository.GetCar(ctx, car.RegistrationNumber)
+	if err != nil {
+		return fmt.Errorf("failed to update car: %w", err)
+	}
+
+	carInfo := model.Car{
+		RegistrationNumber: car.RegistrationNumber,
+		Mark:               car.Mark,
+		Model:              car.Model,
+		Year:               car.Year,
+		OwnerName:          car.OwnerName,
+		OwnerSurname:       car.OwnerSurname,
+	}
+
+	if car.Year == 0 {
+		carInfo.Year = oldCar.Year
+	}
+
+	if car.Mark == "" {
+		carInfo.Mark = oldCar.Mark
+	}
+
+	if car.Model == "" {
+		carInfo.Model = oldCar.Model
+	}
+
+	if car.OwnerName == "" {
+		carInfo.OwnerName = oldCar.OwnerName
+	}
+
+	if car.OwnerSurname == "" {
+		carInfo.OwnerSurname = oldCar.OwnerSurname
+	}
+
+	if err = s.carRepository.UpdateCar(ctx, carInfo); err != nil {
+		return fmt.Errorf("failed to update car: %w", err)
 	}
 
 	return nil
