@@ -14,7 +14,7 @@ func Logger(log *slog.Logger) func(handler http.Handler) http.Handler {
 			slog.String("middleware", "logger"),
 		)
 
-		log.Info("Logger middleware initialized")
+		log.Debug("Logger middleware initialized")
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			entry := log.With(
