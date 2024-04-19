@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -68,4 +69,54 @@ func (r *CarRepository) DeleteCar(ctx context.Context, regNumber string) error {
 	}
 
 	return nil
+}
+
+func (r *CarRepository) UpdateCar(ctx context.Context, car model.Car) error {
+
+	stmt, err := r.postgres.Prepare(
+		`UPDATE cars
+		SET mark = $1, model = $2, year = $3, owner_name = $4, owner_surname = $5
+		WHERE registration_number = $6`,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to prepare update car statement: %w", err)
+	}
+	defer stmt.Close()
+
+	res, err := stmt.ExecContext(ctx, car.Mark, car.Model, car.Year, car.OwnerName, car.OwnerSurname, car.RegistrationNumber)
+	if err != nil {
+		return fmt.Errorf("failed to execute update car statement: %w", err)
+	}
+
+	updated, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if updated == 0 {
+		return repository.ErrCarNotFound
+	}
+
+	return nil
+}
+
+func (r *CarRepository) GetCar(ctx context.Context, regNumber string) (model.Car, error) {
+
+	stmt, err := r.postgres.Prepare("SELECT * FROM cars WHERE registration_number = $1")
+	if err != nil {
+		return model.Car{}, fmt.Errorf("failed to prepare get car statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var car model.Car
+	err = stmt.QueryRowContext(ctx, regNumber).Scan(&car.RegistrationNumber, &car.Mark, &car.Model, &car.Year, &car.OwnerName, &car.OwnerSurname)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return model.Car{}, repository.ErrCarNotFound
+		}
+
+		return model.Car{}, fmt.Errorf("failed to execute get car statement: %w", err)
+	}
+
+	return car, nil
 }
