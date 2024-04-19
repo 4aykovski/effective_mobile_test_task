@@ -12,6 +12,7 @@ import (
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client/carinfo"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/response"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
@@ -22,6 +23,7 @@ type carInfoService interface {
 
 type carService interface {
 	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
+	DeleteCar(ctx context.Context, regNumber string) error
 }
 
 type ownerService interface {
@@ -114,6 +116,38 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
 			return
 		}
+
+		renderResponse(w, r, response.OK(), http.StatusOK)
+		return
+	}
+}
+
+func (h *CarHandler) DeleteCar(log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		log = log.With(
+			slog.String("handler", "DeleteCar"),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		regNumber := chi.URLParam(r, "reg_number")
+
+		err := h.carService.DeleteCar(r.Context(), regNumber)
+		if err != nil {
+			if errors.Is(err, repository.ErrCarNotFound) {
+				log.Info("can't find car with this registration number", slog.String("reg_number", regNumber))
+
+				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				return
+			}
+
+			log.Error("failed to delete car", slog.String("error", err.Error()))
+
+			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Info("car deleted", slog.String("reg_number", regNumber))
 
 		renderResponse(w, r, response.OK(), http.StatusOK)
 		return
