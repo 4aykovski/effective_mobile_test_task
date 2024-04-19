@@ -24,6 +24,7 @@ type carInfoService interface {
 type carService interface {
 	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
 	DeleteCar(ctx context.Context, regNumber string) error
+	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
 }
 
 type ownerService interface {
@@ -148,6 +149,61 @@ func (h *CarHandler) DeleteCar(log *slog.Logger) http.HandlerFunc {
 		}
 
 		log.Info("car deleted", slog.String("reg_number", regNumber))
+
+		renderResponse(w, r, response.OK(), http.StatusOK)
+		return
+	}
+}
+
+type UpdateCarInput struct {
+	Mark         string `json:"mark,omitempty"`
+	Model        string `json:"model,omitempty"`
+	Year         int    `json:"year,omitempty"`
+	OwnerName    string `json:"ownerName,omitempty"`
+	OwnerSurname string `json:"ownerSurname,omitempty"`
+}
+
+func (h *CarHandler) UpdateCar(log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		log = log.With(
+			slog.String("handler", "UpdateCar"),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		regNumber := chi.URLParam(r, "reg_number")
+
+		var input UpdateCarInput
+		if err := render.DecodeJSON(r.Body, &input); err != nil {
+			log.Info("request with empty body")
+
+			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+			return
+		}
+
+		err := h.carService.UpdateCar(r.Context(), carservice.UpdateCarInput{
+			RegistrationNumber: regNumber,
+			Mark:               input.Mark,
+			Model:              input.Model,
+			Year:               input.Year,
+			OwnerName:          input.OwnerName,
+			OwnerSurname:       input.OwnerSurname,
+		})
+		if err != nil {
+			if errors.Is(err, repository.ErrCarNotFound) {
+				log.Info("can't find car with this registration number", slog.String("reg_number", regNumber))
+
+				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				return
+			}
+
+			log.Error("failed to update car", slog.String("error", err.Error()))
+
+			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Info("car updated", slog.String("reg_number", regNumber))
 
 		renderResponse(w, r, response.OK(), http.StatusOK)
 		return

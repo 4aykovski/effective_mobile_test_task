@@ -16,6 +16,7 @@ import (
 type carService interface {
 	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
 	DeleteCar(ctx context.Context, regNumber string) error
+	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
 }
 
 type ownerService interface {
@@ -44,6 +45,7 @@ func NewMux(
 		r.Route("/cars", func(r chi.Router) {
 			r.Post("/", carHandler.AddNewCar(log))
 			r.Delete("/{reg_number}", carHandler.DeleteCar(log))
+			r.Put("/{reg_number}", carHandler.UpdateCar(log))
 		})
 	})
 
