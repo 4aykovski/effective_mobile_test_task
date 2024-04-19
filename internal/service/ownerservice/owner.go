@@ -8,7 +8,7 @@ import (
 )
 
 type ownerRepository interface {
-	AddNewOwner(ctx context.Context, owner *model.Owner) error
+	InsertOwner(ctx context.Context, owner model.Owner) error
 }
 
 type Service struct {
@@ -28,13 +28,13 @@ type AddNewOwnerInput struct {
 }
 
 func (s *Service) AddNewOwner(ctx context.Context, input AddNewOwnerInput) error {
-	owner := &model.Owner{
+	owner := model.Owner{
 		Name:       input.Name,
 		Surname:    input.Surname,
 		Patronymic: input.Patronymic,
 	}
 
-	err := s.ownerRepository.AddNewOwner(ctx, owner)
+	err := s.ownerRepository.InsertOwner(ctx, owner)
 	if err != nil {
 		return fmt.Errorf("can't add new owner: %w", err)
 	}
