@@ -1,4 +1,4 @@
-package service
+package carinfoservice
 
 import (
 	"context"
@@ -12,17 +12,17 @@ type сarInfoClient interface {
 	GetCarInfoByRegNumber(ctx context.Context, number string) ([]byte, error)
 }
 
-type CarInfoService struct {
+type Service struct {
 	client сarInfoClient
 }
 
-func NewCarInfoService(client сarInfoClient) *CarInfoService {
-	return &CarInfoService{
+func New(client сarInfoClient) *Service {
+	return &Service{
 		client: client,
 	}
 }
 
-func (service *CarInfoService) GetCarInfoByRegNumber(ctx context.Context, regNumber string) (*carinfo.CarInfo, error) {
+func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumber string) (*carinfo.CarInfo, error) {
 	res, err := service.client.GetCarInfoByRegNumber(ctx, regNumber)
 	if err != nil {
 		return nil, fmt.Errorf("can't get car info: %w", err)
