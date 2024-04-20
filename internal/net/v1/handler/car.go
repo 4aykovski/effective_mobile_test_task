@@ -66,6 +66,18 @@ type AddNewCarResponse struct {
 	ProcessedCars map[string]string `json:"processed_cars"`
 }
 
+// AddNewCar
+// @Summary Add new cars
+// @Tags cars
+// @Description Add new cars by registration numbers
+// @ID add-new-cars
+// @Accept json
+// @Produce json
+// @Param input body AddNewCarInput true "registration numbers"
+// @Success 200 {object} AddNewCarResponse
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /cars [post]
 func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -144,6 +156,18 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
+// DeleteCar
+// @Summary Delete car
+// @Tags cars
+// @Description Delete car by registration number
+// @ID delete-car
+// @Accept json
+// @Produce json
+// @Param regNumber path string true "registration number"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /cars/{regNumber} [delete]
 func (h *CarHandler) DeleteCar(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -185,6 +209,19 @@ type UpdateCarInput struct {
 	OwnerSurname string `json:"ownerSurname,omitempty"`
 }
 
+// UpdateCar
+// @Summary Update car
+// @Tags cars
+// @Description Update car by registration number
+// @ID update-car
+// @Accept json
+// @Produce json
+// @Param regNumber path string true "registration number"
+// @Param input body UpdateCarInput true "car info"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /cars/{regNumber} [put]
 func (h *CarHandler) UpdateCar(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -239,6 +276,24 @@ type GetCarsResponse struct {
 	response.Response
 }
 
+// GetCars
+// @Summary Get cars
+// @Tags cars
+// @Description Get cars with filtration or pagination
+// @ID get-cars
+// @Accept json
+// @Produce json
+// @Param limit query int false "limit"
+// @Param offset query int false "offset"
+// @Param mark query string false "car mark"
+// @Param ownerName query string false "car owner name"
+// @Param ownerSurname query string false "car owner surname"
+// @Param model query string false "car model"
+// @Param year query int false "car year"
+// @Success 200 {object} GetCarsResponse
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /cars [get]
 func (h *CarHandler) GetCars(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

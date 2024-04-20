@@ -19,6 +19,14 @@ import (
 	"github.com/4aykovski/effective_mobile_test_task/pkg/logger"
 )
 
+// @title Effective Mobile Test Task - Cars Catalog
+// @version 1.0
+
+// @host localhost:8080
+// @BasePath /api/v1
+
+// @schemes http https
+
 func main() {
 	cfg := config.MustLoad()
 	fmt.Println(cfg)

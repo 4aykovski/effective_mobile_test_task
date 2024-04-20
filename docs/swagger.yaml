@@ -1,0 +1,224 @@
+basePath: /api/v1
+definitions:
+  handler.AddNewCarInput:
+    properties:
+      regNumber:
+        items:
+          type: string
+        type: array
+    type: object
+  handler.AddNewCarResponse:
+    properties:
+      error:
+        type: string
+      processed_cars:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        type: string
+    type: object
+  handler.GetCarsResponse:
+    properties:
+      cars:
+        items:
+          $ref: '#/definitions/model.Car'
+        type: array
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  handler.UpdateCarInput:
+    properties:
+      mark:
+        type: string
+      model:
+        type: string
+      ownerName:
+        type: string
+      ownerSurname:
+        type: string
+      year:
+        type: integer
+    type: object
+  model.Car:
+    properties:
+      mark:
+        type: string
+      model:
+        type: string
+      ownerName:
+        type: string
+      ownerSurname:
+        type: string
+      regNumber:
+        type: string
+      year:
+        type: integer
+    type: object
+  response.Response:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  title: Effective Mobile Test Task - Cars Catalog
+  version: "1.0"
+paths:
+  /cars:
+    get:
+      consumes:
+      - application/json
+      description: Get cars with filtration or pagination
+      operationId: get-cars
+      parameters:
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      - description: offset
+        in: query
+        name: offset
+        type: integer
+      - description: car mark
+        in: query
+        name: mark
+        type: string
+      - description: car owner name
+        in: query
+        name: ownerName
+        type: string
+      - description: car owner surname
+        in: query
+        name: ownerSurname
+        type: string
+      - description: car model
+        in: query
+        name: model
+        type: string
+      - description: car year
+        in: query
+        name: year
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.GetCarsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get cars
+      tags:
+      - cars
+    post:
+      consumes:
+      - application/json
+      description: Add new cars by registration numbers
+      operationId: add-new-cars
+      parameters:
+      - description: registration numbers
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AddNewCarInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.AddNewCarResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Add new cars
+      tags:
+      - cars
+  /cars/{regNumber}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete car by registration number
+      operationId: delete-car
+      parameters:
+      - description: registration number
+        in: path
+        name: regNumber
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Delete car
+      tags:
+      - cars
+    put:
+      consumes:
+      - application/json
+      description: Update car by registration number
+      operationId: update-car
+      parameters:
+      - description: registration number
+        in: path
+        name: regNumber
+        required: true
+        type: string
+      - description: car info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateCarInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Update car
+      tags:
+      - cars
+schemes:
+- http
+- https
+swagger: "2.0"
