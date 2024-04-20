@@ -1,0 +1,339 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "title": "Effective Mobile Test Task - Cars Catalog",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/cars": {
+            "get": {
+                "description": "Get cars with filtration or pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cars"
+                ],
+                "summary": "Get cars",
+                "operationId": "get-cars",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "car mark",
+                        "name": "mark",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "car owner name",
+                        "name": "ownerName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "car owner surname",
+                        "name": "ownerSurname",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "car model",
+                        "name": "model",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "car year",
+                        "name": "year",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.GetCarsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add new cars by registration numbers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cars"
+                ],
+                "summary": "Add new cars",
+                "operationId": "add-new-cars",
+                "parameters": [
+                    {
+                        "description": "registration numbers",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.AddNewCarInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.AddNewCarResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/cars/{regNumber}": {
+            "put": {
+                "description": "Update car by registration number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cars"
+                ],
+                "summary": "Update car",
+                "operationId": "update-car",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "registration number",
+                        "name": "regNumber",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "car info",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.UpdateCarInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete car by registration number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cars"
+                ],
+                "summary": "Delete car",
+                "operationId": "delete-car",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "registration number",
+                        "name": "regNumber",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.AddNewCarInput": {
+            "type": "object",
+            "properties": {
+                "regNumber": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "handler.AddNewCarResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "processed_cars": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.GetCarsResponse": {
+            "type": "object",
+            "properties": {
+                "cars": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Car"
+                    }
+                },
+                "error": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.UpdateCarInput": {
+            "type": "object",
+            "properties": {
+                "mark": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "ownerName": {
+                    "type": "string"
+                },
+                "ownerSurname": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.Car": {
+            "type": "object",
+            "properties": {
+                "mark": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "ownerName": {
+                    "type": "string"
+                },
+                "ownerSurname": {
+                    "type": "string"
+                },
+                "regNumber": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
