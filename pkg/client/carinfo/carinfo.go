@@ -47,8 +47,6 @@ func (c *Client) GetCarInfoByRegNumber(ctx context.Context, regNumber string) ([
 		return nil, fmt.Errorf("can't get car info: %w", err)
 	}
 
-	fmt.Println(req.URL.String())
-
 	res, err := c.httpClient.Do(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("can't get car info: %w", err)
