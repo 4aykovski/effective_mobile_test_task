@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -29,7 +28,6 @@ import (
 
 func main() {
 	cfg := config.MustLoad()
-	fmt.Println(cfg)
 
 	log, err := logger.New(cfg.Env)
 	if err != nil {

@@ -44,6 +44,7 @@ func NewMux(
 
 	mux.Use(chiMiddleware.RequestID)
 	mux.Use(middleware.Logger(log))
+	mux.Use(middleware.Swagger(log))
 
 	mux.Route("/api/v1", func(r chi.Router) {
 		r.Route("/cars", func(r chi.Router) {
