@@ -7,14 +7,15 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
+	"sync"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/repository"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/carservice"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/ownerservice"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/api/filter"
-	"github.com/4aykovski/effective_mobile_test_task/pkg/client"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client/carinfo"
+	"github.com/4aykovski/effective_mobile_test_task/pkg/mapper"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/response"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/tag"
 	"github.com/go-chi/chi/v5"
@@ -23,23 +24,23 @@ import (
 )
 
 const (
-	requestWithEmptyBody = "request with empty body"
+	requestWithWrongBody = "request with wrong body"
 	invalidParameter     = "invalid parameter"
 )
 
 type carInfoService interface {
-	GetCarInfoByRegNumber(ctx context.Context, regNumber string) (*carinfo.CarInfo, error)
+	GetCarInfoByRegNumber(ctx context.Context, regNumber []string) map[string]carinfo.CarInfo
 }
 
 type carService interface {
-	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
+	AddNewCars(ctx context.Context, cars []carservice.AddNewCarInput, errs chan error) *sync.Map
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
 	GetCars(ctx context.Context, limit, offset int, filterOptions filter.Options) ([]model.Car, error)
 }
 
 type ownerService interface {
-	AddNewOwner(ctx context.Context, owner ownerservice.AddNewOwnerInput) error
+	AddNewOwners(ctx context.Context, owners []ownerservice.AddNewOwnerInput, errs chan error)
 }
 
 type CarHandler struct {
@@ -57,7 +58,12 @@ func NewCarHandler(carInfoService carInfoService, carService carService, ownerSe
 }
 
 type AddNewCarInput struct {
-	RegNumber string `json:"regNumber"`
+	RegNumber []string `json:"regNumber"`
+}
+
+type AddNewCarResponse struct {
+	response.Response
+	ProcessedCars map[string]string `json:"processed_cars"`
 }
 
 func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
@@ -70,66 +76,63 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 
 		var input AddNewCarInput
 		if err := render.DecodeJSON(r.Body, &input); err != nil {
-			log.Info("request with empty body")
+			log.Info("request with wrong body")
 
-			renderResponse(w, r, response.BadRequest(requestWithEmptyBody), http.StatusBadRequest)
+			renderResponse(w, r, response.BadRequest(requestWithWrongBody), http.StatusBadRequest)
 			return
 		}
+		log.Debug("input", slog.String("input", fmt.Sprint(input)))
 
-		carInfo, err := h.carInfoService.GetCarInfoByRegNumber(r.Context(), input.RegNumber)
-		if err != nil {
-			if errors.Is(err, client.Err400StatusCode) {
-				log.Info("can't find car with this registration number", slog.String("reg_number", input.RegNumber))
+		carInfos := h.carInfoService.GetCarInfoByRegNumber(r.Context(), input.RegNumber)
+		if len(carInfos) == 0 {
+			log.Info("can't find any car info")
 
-				renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - regNumber", invalidParameter)), http.StatusBadRequest)
+			renderResponse(w, r, response.BadRequest(invalidParameter), http.StatusBadRequest)
+			return
+		}
+		log.Debug("car infos", slog.Any("car_infos", carInfos))
+
+		cars, owners := mapper.CarInfoIntoCarAndOwner(carInfos)
+		log.Debug("cars", slog.Any("cars", cars))
+		log.Debug("owners", slog.Any("owners", owners))
+
+		errs := make(chan error, len(owners))
+		h.ownerService.AddNewOwners(r.Context(), owners, errs)
+		for err := range errs {
+			log.Debug("failed to add new owner", slog.String("error", err.Error()))
+			if err != nil && !errors.Is(err, repository.ErrOwnerExists) {
+				log.Error("failed to add new owner", slog.String("error", err.Error()))
+
+				renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
 				return
 			}
-
-			log.Error("Failed to get car info", slog.String("error", err.Error()))
-
-			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
-			return
 		}
 
-		car := carservice.AddNewCarInput{
-			RegistrationNumber: carInfo.RegNumber,
-			Mark:               carInfo.Mark,
-			Model:              carInfo.Model,
-			Year:               carInfo.Year,
-			OwnerName:          carInfo.Owner.Name,
-			OwnerSurname:       carInfo.Owner.Surname,
-		}
+		errs = make(chan error, len(cars))
+		validNumbers := h.carService.AddNewCars(r.Context(), cars, errs)
+		for err := range errs {
+			log.Debug("failed to add new car", slog.String("error", err.Error()))
+			if err != nil && !errors.Is(err, repository.ErrCarExists) {
+				log.Error("failed to add new car", slog.String("error", err.Error()))
 
-		owner := ownerservice.AddNewOwnerInput{
-			Name:       carInfo.Owner.Name,
-			Surname:    carInfo.Owner.Surname,
-			Patronymic: carInfo.Owner.Patronymic,
-		}
-
-		err = h.ownerService.AddNewOwner(r.Context(), owner)
-		if err != nil && !errors.Is(err, repository.ErrOwnerExists) {
-			log.Error("failed to add new owner", slog.String("error", err.Error()))
-
-			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
-			return
-		}
-
-		err = h.carService.AddNewCar(r.Context(), car)
-		if err != nil {
-			if errors.Is(err, repository.ErrCarExists) {
-				log.Info("car with this registration number already exists", slog.String("reg_number", car.RegistrationNumber))
-
-				renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - regNumber", invalidParameter)), http.StatusBadRequest)
+				renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
 				return
 			}
-
-			log.Error("failed to add new car", slog.String("error", err.Error()))
-
-			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
-			return
 		}
 
-		renderResponse(w, r, response.OK(), http.StatusOK)
+		processedCars := make(map[string]string)
+		validNumbers.Range(func(key, value any) bool {
+			regNumber := key.(string)
+			status := value.(string)
+			processedCars[regNumber] = status
+			return true
+		})
+		log.Debug("processed cars", slog.Any("processed_cars", processedCars))
+
+		log.Info("cars processed", slog.Any("cars", processedCars))
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, AddNewCarResponse{Response: response.OK(), ProcessedCars: processedCars})
 		return
 	}
 }
@@ -143,6 +146,7 @@ func (h *CarHandler) DeleteCar(log *slog.Logger) http.HandlerFunc {
 		)
 
 		regNumber := chi.URLParam(r, "reg_number")
+		log.Debug("reg number", slog.String("reg_number", regNumber))
 
 		err := h.carService.DeleteCar(r.Context(), regNumber)
 		if err != nil {
@@ -183,14 +187,16 @@ func (h *CarHandler) UpdateCar(log *slog.Logger) http.HandlerFunc {
 		)
 
 		regNumber := chi.URLParam(r, "reg_number")
+		log.Debug("reg number", slog.String("reg_number", regNumber))
 
 		var input UpdateCarInput
 		if err := render.DecodeJSON(r.Body, &input); err != nil {
-			log.Info("request with empty body")
+			log.Info("request with wrong body")
 
-			renderResponse(w, r, response.BadRequest(requestWithEmptyBody), http.StatusBadRequest)
+			renderResponse(w, r, response.BadRequest(requestWithWrongBody), http.StatusBadRequest)
 			return
 		}
+		log.Debug("input", slog.Any("input", input))
 
 		err := h.carService.UpdateCar(r.Context(), carservice.UpdateCarInput{
 			RegistrationNumber: regNumber,

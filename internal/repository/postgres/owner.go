@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/repository"
@@ -31,6 +32,8 @@ func (r *OwnerRepository) InsertOwner(ctx context.Context, owner model.Owner) er
 	}
 	defer stmt.Close()
 
+	var mu sync.Mutex
+	mu.Lock()
 	_, err = stmt.ExecContext(ctx, owner.Name, owner.Surname, owner.Patronymic)
 	if err != nil {
 		var pqErr *pq.Error
@@ -42,6 +45,7 @@ func (r *OwnerRepository) InsertOwner(ctx context.Context, owner model.Owner) er
 
 		return fmt.Errorf("failed to execute add new owner statement: %w", err)
 	}
+	mu.Unlock()
 
 	return nil
 }

@@ -3,6 +3,7 @@ package carservice
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/api/filter"
@@ -26,6 +27,36 @@ func NewCarService(carRepository carRepository) *Service {
 	}
 }
 
+func (s *Service) AddNewCars(ctx context.Context, cars []AddNewCarInput, errs chan error) *sync.Map {
+
+	var valid sync.Map
+	var wg sync.WaitGroup
+	wg.Add(len(cars))
+
+	for _, car := range cars {
+		go func(car AddNewCarInput) {
+			defer wg.Done()
+
+			if car.Valid {
+				err := s.AddNewCar(ctx, car)
+				if err != nil {
+					errs <- err
+					valid.Store(car.RegistrationNumber, "invalid")
+					return
+				}
+				valid.Store(car.RegistrationNumber, "valid")
+			} else {
+				valid.Store(car.RegistrationNumber, "invalid")
+			}
+
+		}(car)
+	}
+
+	wg.Wait()
+	close(errs)
+	return &valid
+}
+
 type AddNewCarInput struct {
 	RegistrationNumber string
 	Mark               string
@@ -33,6 +64,7 @@ type AddNewCarInput struct {
 	Year               int
 	OwnerName          string
 	OwnerSurname       string
+	Valid              bool
 }
 
 func (s *Service) AddNewCar(ctx context.Context, car AddNewCarInput) error {

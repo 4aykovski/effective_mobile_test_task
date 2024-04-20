@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/repository"
@@ -33,6 +34,8 @@ func (r *CarRepository) InsertCar(ctx context.Context, car model.Car) error {
 	}
 	defer stmt.Close()
 
+	var mu sync.Mutex
+	mu.Lock()
 	_, err = stmt.ExecContext(ctx, car.RegistrationNumber, car.Mark, car.Model, car.Year, car.OwnerName, car.OwnerSurname)
 	if err != nil {
 		var pqErr *pq.Error
@@ -44,6 +47,7 @@ func (r *CarRepository) InsertCar(ctx context.Context, car model.Car) error {
 
 		return fmt.Errorf("failed to execute add new car statement: %w", err)
 	}
+	mu.Unlock()
 
 	return nil
 }

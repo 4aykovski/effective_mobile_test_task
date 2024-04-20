@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client"
 )
 
@@ -25,11 +24,17 @@ func NewClient(httpClient *client.HTTPClient) *Client {
 }
 
 type CarInfo struct {
-	RegNumber string      `json:"regNumber"`
-	Mark      string      `json:"mark"`
-	Model     string      `json:"model"`
-	Year      int         `json:"year,omitempty"`
-	Owner     model.Owner `json:"owner"`
+	RegNumber string `json:"regNumber"`
+	Mark      string `json:"mark"`
+	Model     string `json:"model"`
+	Year      int    `json:"year,omitempty"`
+	Owner     Owner  `json:"owner"`
+}
+
+type Owner struct {
+	Name       string `json:"name"`
+	Surname    string `json:"surname"`
+	Patronymic string `json:"patronymic,omitempty"`
 }
 
 func (c *Client) GetCarInfoByRegNumber(ctx context.Context, regNumber string) ([]byte, error) {

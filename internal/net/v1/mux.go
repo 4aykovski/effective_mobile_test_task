@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"sync"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/net/v1/handler"
@@ -16,18 +17,18 @@ import (
 )
 
 type carService interface {
-	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
+	AddNewCars(ctx context.Context, cars []carservice.AddNewCarInput, errs chan error) *sync.Map
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
 	GetCars(ctx context.Context, limit, offset int, filterOptions filter.Options) ([]model.Car, error)
 }
 
 type ownerService interface {
-	AddNewOwner(ctx context.Context, owner ownerservice.AddNewOwnerInput) error
+	AddNewOwners(ctx context.Context, owners []ownerservice.AddNewOwnerInput, errs chan error)
 }
 
 type carInfoService interface {
-	GetCarInfoByRegNumber(ctx context.Context, regNumber string) (*carinfo.CarInfo, error)
+	GetCarInfoByRegNumber(ctx context.Context, regNumber []string) map[string]carinfo.CarInfo
 }
 
 func NewMux(

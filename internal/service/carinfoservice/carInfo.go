@@ -3,7 +3,7 @@ package carinfoservice
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"sync"
 
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client/carinfo"
 )
@@ -22,16 +22,41 @@ func New(client сarInfoClient) *Service {
 	}
 }
 
-func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumber string) (*carinfo.CarInfo, error) {
-	res, err := service.client.GetCarInfoByRegNumber(ctx, regNumber)
-	if err != nil {
-		return nil, fmt.Errorf("can't get car info: %w", err)
+func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumbers []string) map[string]carinfo.CarInfo {
+
+	return map[string]carinfo.CarInfo{
+		"X123": {},
+		"X123XX156": {
+			RegNumber: "X123XX156",
+			Mark:      "Volkswagen",
+			Model:     "Passat",
+			Year:      2019,
+			Owner:     carinfo.Owner{Name: "Andrey", Surname: "Chaykovski", Patronymic: "Sergeevich"},
+		},
 	}
 
-	var carInfo carinfo.CarInfo
-	if err = json.Unmarshal(res, &carInfo); err != nil {
-		return nil, fmt.Errorf("can't unmarshal car info: %w", err)
+	carInfos := make(map[string]carinfo.CarInfo)
+	var wg sync.WaitGroup
+	wg.Add(len(regNumbers))
+
+	for _, regNumber := range regNumbers {
+		go func(regNumber string) {
+			defer wg.Done()
+			res, err := service.client.GetCarInfoByRegNumber(ctx, regNumber)
+			if err != nil {
+				carInfos[regNumber] = carinfo.CarInfo{}
+				return
+			}
+			var carInfo carinfo.CarInfo
+			if err = json.Unmarshal(res, &carInfo); err != nil {
+				carInfos[regNumber] = carinfo.CarInfo{}
+				return
+			}
+			carInfos[regNumber] = carInfo
+		}(regNumber)
 	}
 
-	return &carInfo, nil
+	wg.Wait()
+
+	return carInfos
 }

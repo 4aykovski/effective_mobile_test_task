@@ -3,6 +3,7 @@ package ownerservice
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 )
@@ -19,6 +20,21 @@ func New(ownerRepository ownerRepository) *Service {
 	return &Service{
 		ownerRepository: ownerRepository,
 	}
+}
+
+func (s *Service) AddNewOwners(ctx context.Context, owners []AddNewOwnerInput, errs chan error) {
+	var wg sync.WaitGroup
+	wg.Add(len(owners))
+
+	for _, owner := range owners {
+		go func(owner AddNewOwnerInput) {
+			defer wg.Done()
+			errs <- s.AddNewOwner(ctx, owner)
+		}(owner)
+	}
+
+	wg.Wait()
+	close(errs)
 }
 
 type AddNewOwnerInput struct {
