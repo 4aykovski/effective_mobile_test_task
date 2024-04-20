@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
+	"github.com/4aykovski/effective_mobile_test_task/pkg/api/filter"
 )
 
 type carRepository interface {
@@ -12,7 +13,7 @@ type carRepository interface {
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car model.Car) error
 	GetCar(ctx context.Context, regNumber string) (model.Car, error)
-	GetCars(ctx context.Context, limit, offset int) ([]model.Car, error)
+	GetCars(ctx context.Context, limit, offset int, filterOptions filter.Options) ([]model.Car, error)
 }
 
 type Service struct {
@@ -113,8 +114,8 @@ func (s *Service) UpdateCar(ctx context.Context, car UpdateCarInput) error {
 	return nil
 }
 
-func (s *Service) GetCars(ctx context.Context, limit, offset int) ([]model.Car, error) {
-	cars, err := s.carRepository.GetCars(ctx, limit, offset)
+func (s *Service) GetCars(ctx context.Context, limit, offset int, filterOptions filter.Options) ([]model.Car, error) {
+	cars, err := s.carRepository.GetCars(ctx, limit, offset, filterOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cars: %w", err)
 	}

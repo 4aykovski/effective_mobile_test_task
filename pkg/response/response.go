@@ -1,5 +1,7 @@
 package response
 
+import "fmt"
+
 type Response struct {
 	Status string `json:"status"`
 	Error  string `json:"error,omitempty"`
@@ -22,8 +24,8 @@ func InternalError() Response {
 	return Error(internalServerErrorMessage)
 }
 
-func BadRequest() Response {
-	return Error(badRequestErrorMessage)
+func BadRequest(msg string) Response {
+	return Error(fmt.Sprintf("%s: %s", badRequestErrorMessage, msg))
 }
 
 func Error(msg string) Response {

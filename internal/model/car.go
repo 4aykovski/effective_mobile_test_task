@@ -1,10 +1,10 @@
 package model
 
 type Car struct {
-	RegistrationNumber string `json:"registration_number"`
-	Mark               string `json:"mark"`
-	Model              string `json:"model"`
-	Year               int    `json:"year,omitempty"`
-	OwnerName          string `json:"owner_name"`
-	OwnerSurname       string `json:"owner_surname"`
+	RegistrationNumber string `db:"registration_number" json:"regNumber"`
+	Mark               string `db:"mark" json:"mark"`
+	Model              string `db:"model" json:"model"`
+	Year               int    `db:"year" json:"year,omitempty"`
+	OwnerName          string `db:"owner_name" json:"ownerName"`
+	OwnerSurname       string `db:"owner_surname" json:"ownerSurname"`
 }

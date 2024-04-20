@@ -8,6 +8,7 @@ import (
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/repository"
+	"github.com/4aykovski/effective_mobile_test_task/pkg/api/filter"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/database/postgres"
 	"github.com/lib/pq"
 )
@@ -121,10 +122,12 @@ func (r *CarRepository) GetCar(ctx context.Context, regNumber string) (model.Car
 	return car, nil
 }
 
-func (r *CarRepository) GetCars(ctx context.Context, limit, offset int) ([]model.Car, error) {
-	sqlStmt := `SELECT * FROM cars ORDER BY registration_number`
+func (r *CarRepository) GetCars(ctx context.Context, limit, offset int, filterOptions filter.Options) ([]model.Car, error) {
+	sqlStmt := `SELECT * FROM cars`
 	var args []interface{}
 
+	sqlStmt, args = postgres.AddFilterToStmt(sqlStmt, args, filterOptions, model.Car{})
+	sqlStmt += ` ORDER BY registration_number`
 	sqlStmt, args = postgres.AddPaginationToStmt(sqlStmt, args, limit, offset)
 
 	stmt, err := r.postgres.Prepare(sqlStmt)

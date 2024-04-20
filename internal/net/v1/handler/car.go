@@ -3,19 +3,28 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"reflect"
 
 	"github.com/4aykovski/effective_mobile_test_task/internal/model"
 	"github.com/4aykovski/effective_mobile_test_task/internal/repository"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/carservice"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/ownerservice"
+	"github.com/4aykovski/effective_mobile_test_task/pkg/api/filter"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client/carinfo"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/response"
+	"github.com/4aykovski/effective_mobile_test_task/pkg/tag"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+)
+
+const (
+	requestWithEmptyBody = "request with empty body"
+	invalidParameter     = "invalid parameter"
 )
 
 type carInfoService interface {
@@ -26,7 +35,7 @@ type carService interface {
 	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
-	GetCars(ctx context.Context, limit, offset int) ([]model.Car, error)
+	GetCars(ctx context.Context, limit, offset int, filterOptions filter.Options) ([]model.Car, error)
 }
 
 type ownerService interface {
@@ -63,7 +72,7 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 		if err := render.DecodeJSON(r.Body, &input); err != nil {
 			log.Info("request with empty body")
 
-			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+			renderResponse(w, r, response.BadRequest(requestWithEmptyBody), http.StatusBadRequest)
 			return
 		}
 
@@ -72,7 +81,7 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 			if errors.Is(err, client.Err400StatusCode) {
 				log.Info("can't find car with this registration number", slog.String("reg_number", input.RegNumber))
 
-				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - regNumber", invalidParameter)), http.StatusBadRequest)
 				return
 			}
 
@@ -110,7 +119,7 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 			if errors.Is(err, repository.ErrCarExists) {
 				log.Info("car with this registration number already exists", slog.String("reg_number", car.RegistrationNumber))
 
-				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - regNumber", invalidParameter)), http.StatusBadRequest)
 				return
 			}
 
@@ -140,7 +149,7 @@ func (h *CarHandler) DeleteCar(log *slog.Logger) http.HandlerFunc {
 			if errors.Is(err, repository.ErrCarNotFound) {
 				log.Info("can't find car with this registration number", slog.String("reg_number", regNumber))
 
-				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - regNumber", invalidParameter)), http.StatusBadRequest)
 				return
 			}
 
@@ -179,7 +188,7 @@ func (h *CarHandler) UpdateCar(log *slog.Logger) http.HandlerFunc {
 		if err := render.DecodeJSON(r.Body, &input); err != nil {
 			log.Info("request with empty body")
 
-			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+			renderResponse(w, r, response.BadRequest(requestWithEmptyBody), http.StatusBadRequest)
 			return
 		}
 
@@ -195,7 +204,7 @@ func (h *CarHandler) UpdateCar(log *slog.Logger) http.HandlerFunc {
 			if errors.Is(err, repository.ErrCarNotFound) {
 				log.Info("can't find car with this registration number", slog.String("reg_number", regNumber))
 
-				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - regNumber", invalidParameter)), http.StatusBadRequest)
 				return
 			}
 
@@ -225,28 +234,52 @@ func (h *CarHandler) GetCars(log *slog.Logger) http.HandlerFunc {
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
+		allowedFilters := make(map[string]string)
+		carType := reflect.TypeOf(model.Car{})
+		for i := 0; i < carType.NumField(); i++ {
+			allowedFilter := tag.ParseJsonTag(carType.Field(i).Tag.Get("json"))
+			type_ := carType.Field(i).Type.Name()
+			allowedFilters[allowedFilter] = type_
+		}
+		log.Debug("allowed filters", slog.Any("filters", allowedFilters))
+
+		filterOptions, err := getFiltersFromUrlQuery(r, allowedFilters)
+		if err != nil {
+			log.Info("invalid filter", slog.String("filter", err.Error()))
+
+			renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - filter", invalidParameter)), http.StatusBadRequest)
+			return
+		}
+		log.Debug("filter options", slog.Any("filters", filterOptions))
+
 		limit, err := getLimitFromUrlQuery(r)
 		if err != nil {
 			log.Info("invalid limit", slog.String("limit", string(rune(limit))))
 
-			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+			renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - limit", invalidParameter)), http.StatusBadRequest)
 			return
 		}
+		log.Debug("limit", slog.Int("limit", limit))
 
 		offset, err := getOffsetFromUrlQuery(r)
 		if err != nil {
 			log.Info("invalid offset", slog.String("offset", string(rune(offset))))
 
-			renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+			renderResponse(w, r, response.BadRequest(fmt.Sprintf("%s - offset", invalidParameter)), http.StatusBadRequest)
 			return
 		}
+		log.Debug("offset", slog.Int("offset", offset))
 
-		cars, err := h.carService.GetCars(r.Context(), limit, offset)
+		cars, err := h.carService.GetCars(r.Context(), limit, offset, filterOptions)
 		if err != nil {
 			if errors.Is(err, repository.ErrCarsNotFound) {
 				log.Info("cars not found")
 
-				renderResponse(w, r, response.BadRequest(), http.StatusBadRequest)
+				render.Status(r, http.StatusOK)
+				render.JSON(w, r, GetCarsResponse{
+					Cars:     nil,
+					Response: response.OK(),
+				})
 				return
 			}
 

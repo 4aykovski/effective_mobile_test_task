@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/4aykovski/effective_mobile_test_task/pkg/api/filter"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/response"
 	"github.com/go-chi/render"
 )
@@ -38,4 +40,44 @@ func getOffsetFromUrlQuery(r *http.Request) (int, error) {
 		}
 	}
 	return offset, nil
+}
+
+func getFiltersFromUrlQuery(r *http.Request, allowedFilters map[string]string) (filter.Options, error) {
+	filterOptions := filter.NewOptions()
+	for filterName, filterType := range allowedFilters {
+		strValue := r.URL.Query().Get(filterName)
+		if strValue != "" {
+			var type_ string
+			var operator string
+
+			switch filterType {
+			case filter.DataTypeInt:
+				type_ = filter.DataTypeInt
+				operator = filter.OperatorEq
+
+				if strings.Index(strValue, ":") != -1 {
+					split := strings.Split(strValue, ":")
+					operator = split[0]
+					strValue = split[1]
+
+					if _, err := strconv.Atoi(strValue); err != nil {
+						return nil, fmt.Errorf("failed to parse filter: %w", err)
+					}
+					type_ = filter.DataTypeInt
+				} else {
+					if _, err := strconv.Atoi(strValue); err != nil {
+						return nil, fmt.Errorf("failed to parse filter: %w", err)
+					}
+				}
+			case filter.DataTypeStr:
+				type_ = filter.DataTypeInt
+				operator = filter.OperatorEq
+			}
+
+			if err := filterOptions.AddField(filterName, operator, strValue, type_); err != nil {
+				return nil, fmt.Errorf("failed to parse filter: %w", err)
+			}
+		}
+	}
+	return filterOptions, nil
 }

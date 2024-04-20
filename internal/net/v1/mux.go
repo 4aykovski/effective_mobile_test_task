@@ -9,6 +9,7 @@ import (
 	"github.com/4aykovski/effective_mobile_test_task/internal/net/v1/middleware"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/carservice"
 	"github.com/4aykovski/effective_mobile_test_task/internal/service/ownerservice"
+	"github.com/4aykovski/effective_mobile_test_task/pkg/api/filter"
 	"github.com/4aykovski/effective_mobile_test_task/pkg/client/carinfo"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -18,7 +19,7 @@ type carService interface {
 	AddNewCar(ctx context.Context, car carservice.AddNewCarInput) error
 	DeleteCar(ctx context.Context, regNumber string) error
 	UpdateCar(ctx context.Context, car carservice.UpdateCarInput) error
-	GetCars(ctx context.Context, limit, offset int) ([]model.Car, error)
+	GetCars(ctx context.Context, limit, offset int, filterOptions filter.Options) ([]model.Car, error)
 }
 
 type ownerService interface {

@@ -1,6 +1,8 @@
 package postgres
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func AddPaginationToStmt(stmt string, args []interface{}, limit, offset int) (string, []interface{}) {
 	if limit > 0 {
