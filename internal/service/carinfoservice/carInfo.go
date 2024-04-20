@@ -22,7 +22,7 @@ func New(client сarInfoClient) *Service {
 	}
 }
 
-func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumbers []string) map[string]carinfo.CarInfo {
+func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumbers []string, errs chan error) map[string]carinfo.CarInfo {
 	carInfos := make(map[string]carinfo.CarInfo)
 	var wg sync.WaitGroup
 	wg.Add(len(regNumbers))
@@ -32,11 +32,13 @@ func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumbers []
 			defer wg.Done()
 			res, err := service.client.GetCarInfoByRegNumber(ctx, regNumber)
 			if err != nil {
+				errs <- err
 				carInfos[regNumber] = carinfo.CarInfo{}
 				return
 			}
 			var carInfo carinfo.CarInfo
 			if err = json.Unmarshal(res, &carInfo); err != nil {
+				errs <- err
 				carInfos[regNumber] = carinfo.CarInfo{}
 				return
 			}
@@ -45,6 +47,7 @@ func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumbers []
 	}
 
 	wg.Wait()
+	close(errs)
 
 	return carInfos
 }

@@ -29,7 +29,7 @@ const (
 )
 
 type carInfoService interface {
-	GetCarInfoByRegNumber(ctx context.Context, regNumber []string) map[string]carinfo.CarInfo
+	GetCarInfoByRegNumber(ctx context.Context, regNumbers []string, errs chan error) map[string]carinfo.CarInfo
 }
 
 type carService interface {
@@ -83,20 +83,27 @@ func (h *CarHandler) AddNewCar(log *slog.Logger) http.HandlerFunc {
 		}
 		log.Debug("input", slog.String("input", fmt.Sprint(input)))
 
-		carInfos := h.carInfoService.GetCarInfoByRegNumber(r.Context(), input.RegNumber)
-		if len(carInfos) == 0 {
-			log.Info("can't find any car info")
+		errs := make(chan error, len(input.RegNumber))
+		carInfos := h.carInfoService.GetCarInfoByRegNumber(r.Context(), input.RegNumber, errs)
+		errCount := 0
+		for err := range errs {
+			log.Debug("failed to get car info", slog.String("error", err.Error()))
+			errCount++
+		}
+		if errCount == len(input.RegNumber) {
+			log.Info("failed to get car info")
 
-			renderResponse(w, r, response.BadRequest(invalidParameter), http.StatusBadRequest)
+			renderResponse(w, r, response.InternalError(), http.StatusInternalServerError)
 			return
 		}
+
 		log.Debug("car infos", slog.Any("car_infos", carInfos))
 
 		cars, owners := mapper.CarInfoIntoCarAndOwner(carInfos)
 		log.Debug("cars", slog.Any("cars", cars))
 		log.Debug("owners", slog.Any("owners", owners))
 
-		errs := make(chan error, len(owners))
+		errs = make(chan error, len(owners))
 		h.ownerService.AddNewOwners(r.Context(), owners, errs)
 		for err := range errs {
 			log.Debug("failed to add new owner", slog.String("error", err.Error()))

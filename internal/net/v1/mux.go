@@ -28,7 +28,7 @@ type ownerService interface {
 }
 
 type carInfoService interface {
-	GetCarInfoByRegNumber(ctx context.Context, regNumber []string) map[string]carinfo.CarInfo
+	GetCarInfoByRegNumber(ctx context.Context, regNumbers []string, errs chan error) map[string]carinfo.CarInfo
 }
 
 func NewMux(
