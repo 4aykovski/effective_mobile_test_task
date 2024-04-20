@@ -23,18 +23,6 @@ func New(client сarInfoClient) *Service {
 }
 
 func (service *Service) GetCarInfoByRegNumber(ctx context.Context, regNumbers []string) map[string]carinfo.CarInfo {
-
-	return map[string]carinfo.CarInfo{
-		"X123": {},
-		"X123XX156": {
-			RegNumber: "X123XX156",
-			Mark:      "Volkswagen",
-			Model:     "Passat",
-			Year:      2019,
-			Owner:     carinfo.Owner{Name: "Andrey", Surname: "Chaykovski", Patronymic: "Sergeevich"},
-		},
-	}
-
 	carInfos := make(map[string]carinfo.CarInfo)
 	var wg sync.WaitGroup
 	wg.Add(len(regNumbers))
