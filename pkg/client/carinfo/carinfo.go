@@ -24,7 +24,7 @@ func NewClient(httpClient *client.HTTPClient) *Client {
 }
 
 type CarInfo struct {
-	RegNumber string `json:"regNumber"`
+	RegNumber string `json:"regNum"`
 	Mark      string `json:"mark"`
 	Model     string `json:"model"`
 	Year      int    `json:"year,omitempty"`
@@ -46,6 +46,8 @@ func (c *Client) GetCarInfoByRegNumber(ctx context.Context, regNumber string) ([
 	if err != nil {
 		return nil, fmt.Errorf("can't get car info: %w", err)
 	}
+
+	fmt.Println(req.URL.String())
 
 	res, err := c.httpClient.Do(ctx, req)
 	if err != nil {
